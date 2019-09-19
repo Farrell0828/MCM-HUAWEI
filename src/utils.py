@@ -5,6 +5,9 @@ from keras import backend as K
 def rmse(y_true, y_pred):
     return K.sqrt(K.mean(K.pow(y_true - y_pred, 2)))
 
+def rmse_np(y_true, y_pred):
+    return np.sqrt(np.power(y_true - y_pred, 2).mean())
+
 def pcrr(threshold, y_true, y_pred):
     t = threshold
     tp, fp, fn = 0, 0, 0
