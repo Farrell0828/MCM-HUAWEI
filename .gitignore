@@ -1,2 +1,5 @@
 data/
 .vscode/
+logs/
+k-fold/
+__pycache__/
