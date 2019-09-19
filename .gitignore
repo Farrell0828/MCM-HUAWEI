@@ -3,3 +3,4 @@ data/
 logs/
 k-fold/
 __pycache__/
+playground.py
