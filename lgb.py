@@ -9,8 +9,9 @@ import lightgbm as lgb
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import train_test_split
 # 读数据，并进行处理
-train_df = pd.read_csv("./src/data/train.csv")
+train_df = pd.read_csv("./data/train.csv")
 X=train_df.drop('RSRP',axis=1)
 y=train_df['RSRP']
 #%%
