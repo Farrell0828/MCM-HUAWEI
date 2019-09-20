@@ -47,3 +47,14 @@ test_df['hb'] = test_df['Height'] + test_df['Cell Altitude'] - test_df['Altitude
 (test_df['hb'] <= 0).sum()
 
 #%%
+train_df[['Cell X', 'X']].values.min(axis=1)
+
+#%%
+train_df['left_dege'] = train_df[['Cell X', 'X']].values.min(axis=1)
+train_df['right_edge'] = train_df[['Cell X', 'X']].values.max(axis=1)
+train_df
+
+#%%
+train_df[['Cell X', 'X', 'left_dege', 'right_edge']]
+
+#%%
