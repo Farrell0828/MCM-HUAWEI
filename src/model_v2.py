@@ -58,7 +58,7 @@ for train_idx, val_idx in gkf.split(df, df['RSRP_Poor'], df['Cell Index']):
     optimizer = SGD(lr=1e-3, momentum=0.9)
     model.compile(loss=wmse, optimizer=optimizer, metrics=[rmse])
 
-    checkpoint = ModelCheckpoint('./k-fold/model_v2/val_loss_best_fold_{}.h5'.format(fold), 
+    checkpoint = ModelCheckpoint('./k-fold/val_loss_best_fold_{}.h5'.format(fold), 
                                  save_weights_only=True, verbose=1)
     reduce_lr = ReduceLROnPlateau(patience=5, min_delta=1e-4, verbose=1)
     early_stop = EarlyStopping(patience=8, min_delta=1e-4, verbose=1)
@@ -72,7 +72,7 @@ for train_idx, val_idx in gkf.split(df, df['RSRP_Poor'], df['Cell Index']):
               validation_data=(val_x, val_y),
               callbacks=callbacks)
 
-    model.load_weights('./k-fold/model_v2/val_loss_best_fold_{}.h5'.format(fold))
+    model.load_weights('./k-fold/val_loss_best_fold_{}.h5'.format(fold))
     val_y_pred = model.predict(val_x, batch_size=4096)
     print('Calculate final val RMSE and PCRR score...')
     rmse_score = rmse_np(val_y, val_y_pred)
@@ -92,6 +92,6 @@ test_df['RSRP'] = test_y_pred
 for cell_index in test_df['Cell Index'].unique():
     sub_df = test_df[test_df['Cell Index'] == cell_index]
     rsrp = sub_df[['RSRP']].values.tolist()
-    f = open("./results/model_v2/test_{}.csv_result.txt".format(cell_index), "w")
+    f = open("./results/test_{}.csv_result.txt".format(cell_index), "w")
     f.write(str({'RSRP': rsrp}))
     f.close()
