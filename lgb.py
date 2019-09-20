@@ -30,26 +30,3 @@ print(loss)
 print("------importance--------")
 print(reg.feature_importances_)
 
-
-#%%
-from xgboost import XGBRegressor
-
-reg = XGBRegressor()
-model=reg.fit(X_train, y_train)
-y_pred = reg.predict(X_test)
-loss = mean_squared_error(y_test, y_pred)
-print("----------loss_xgb-------")
-print(loss)
-print("------importance--------")
-print(model.feature_importances_) 
-
-from xgboost import XGBRegressor
-
-reg = XGBRegressor()
-model=reg.fit(X_train, y_train)
-y_pred = reg.predict(X_test)
-loss = mean_squared_error(y_test, y_pred)
-print("----------loss_xgb-------")
-print(loss)
-print("------importance--------")
-print(model.feature_importances_)
