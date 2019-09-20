@@ -24,20 +24,10 @@ from lightgbm import LGBMRegressor
 reg = LGBMRegressor()
 reg.fit(X_train, y_train)
 y_pred = reg.predict(X_test)
-loss = metrics.mean_squared_error(y_test, y_pred)
+loss = mean_squared_error(y_test, y_pred)
 print(loss)
-name = 'LGBMRegressor'
-history.append([name,loss,end-start])
 
-start = time.time()
-reg = LGBMRegressor(num_leaves=40,max_depth=7,n_estimators=200,min_child_weight=10,
-					subsample=0.7, colsample_bytree=0.7,reg_alpha=0, reg_lambda=0.5)
-reg.fit(X_train, y_train)
-end = time.time()
-y_pred = reg.predict(X_test)
-loss = metrics.mean_squared_error(y_test, y_pred)
-name = 'LGBMRegressor_s'
-history.append([name,loss,end-start])
+
 
 
 #%%
