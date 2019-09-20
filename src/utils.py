@@ -6,7 +6,14 @@ def rmse(y_true, y_pred):
     return K.sqrt(K.mean(K.pow(y_true - y_pred, 2)))
 
 def rmse_np(y_true, y_pred):
-    return np.sqrt(np.power(y_true - y_pred, 2).mean())
+    sum_se = 0
+    sub_len = 10000
+    steps = np.ceil(len(y_true) / sub_len)
+    for i in tqdm(range(int(steps))):
+        y_true_sub = y_true[i*sub_len:(i+1)*sub_len]
+        y_pred_sub = y_pred[i*sub_len:(i+1)*sub_len]
+        sum_se += np.power(y_true_sub - y_pred_sub, 2).sum()
+    return np.sqrt(sum_se / len(y_true))
 
 def pcrr(threshold, y_true, y_pred):
     t = threshold

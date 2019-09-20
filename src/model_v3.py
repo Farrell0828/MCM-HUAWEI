@@ -15,9 +15,10 @@ from utils import rmse, rmse_np, pcrr
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-df = pd.read_csv('./data/train_v2.csv')
-test_df = pd.read_csv('./data/test_v2.csv')
-x_cols = [col for col in df.columns if col not in ['Cell Index', 'RSRP', 'RSRP_Poor']]
+df = pd.read_csv('./data/train_v3.csv')
+test_df = pd.read_csv('./data/test_v3.csv')
+ignore_cols = ['Cell Index', 'Cell Clutter Index', 'Clutter Index', 'RSRP', 'RSRP_Poor']
+x_cols = [col for col in df.columns if col not in ignore_cols]
 test_x = test_df[x_cols].values
 
 n_folds = 5
@@ -49,10 +50,10 @@ for train_idx, val_idx in gkf.split(df, df['RSRP_Poor'], df['Cell Index']):
     K.clear_session()
     input_tensor = Input(shape=(train_x.shape[1], ), name='input')
     x = Dense(128, name='fc1')(input_tensor)
-    # x = BatchNormalization(name='bn1')(x)
+    x = BatchNormalization(name='bn1')(x)
     x = ReLU(name='relu1')(x)
     x = Dense(128, name='fc2')(x)
-    # x = BatchNormalization(name='bn2')(x)
+    x = BatchNormalization(name='bn2')(x)
     x = ReLU(name='relu2')(x)
     x = Dense(1, name='output')(x)
 
@@ -77,16 +78,16 @@ for train_idx, val_idx in gkf.split(df, df['RSRP_Poor'], df['Cell Index']):
     model.load_weights('./k-fold/val_loss_best_fold_{}.h5'.format(fold))
     val_y_pred = model.predict(val_x, batch_size=4096)
     print('Calculate final val RMSE and PCRR score...')
-    rmse_score = rmse_np(val_y, val_y_pred)
-    rmse_scores.append(rmse_score)
-    print('Fold {} Val RMSE Score: {}'.format(fold, rmse_score))
+    # rmse_score = rmse_np(val_y, val_y_pred)
+    # rmse_scores.append(rmse_score)
+    # print('Fold {} Val RMSE Score: {}'.format(fold, rmse_score))
     pcrr_score = pcrr(-103, val_y, val_y_pred)
     pcrr_scores.append(pcrr_score)
     print('Fold {} Val PCRR Score: {}'.format(fold, pcrr_score))
 
     test_y_pred += model.predict(test_x, batch_size=1024, verbose=1)
 
-print('CV RMSE Score: ', np.array(rmse_scores).mean())
+# print('CV RMSE Score: ', np.array(rmse_scores).mean())
 print('CV PCRR Score: ', np.array(pcrr_scores).mean())
 
 if not os.path.exists('./results/'): os.mkdir('./results')
