@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np 
 import tensorflow as tf 
 from keras import backend as K 
+from keras import regularizers 
 from keras.layers import Input, Dense, BatchNormalization, ReLU 
 from keras.models import Model 
 from keras.optimizers import Adam, SGD 
@@ -16,10 +17,11 @@ from utils import rmse, rmse_np, pcrr
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 df = pd.read_csv('./data/train_v3.csv')
-test_df = pd.read_csv('./data/test_v3.csv')
+df['RSRP_Poor'] = df['RSRP_Poor'].astype(int)
+# test_df = pd.read_csv('./data/test_v3.csv')
 ignore_cols = ['Cell Index', 'Cell Clutter Index', 'Clutter Index', 'RSRP', 'RSRP_Poor']
 x_cols = [col for col in df.columns if col not in ignore_cols]
-test_x = test_df[x_cols].values
+# test_x = test_df[x_cols].values
 
 n_folds = 5
 gkf = GroupKFold(n_splits=n_folds)
@@ -40,24 +42,52 @@ for train_idx, val_idx in gkf.split(df, df['RSRP_Poor'], df['Cell Index']):
     val_y = val_df['RSRP'].values
     train_x = (train_x - train_x.min(axis=0)) / (train_x.max(axis=0) - train_x.min(axis=0))
     val_x = (val_x - train_x.min(axis=0)) / (train_x.max(axis=0) - train_x.min(axis=0))
-    test_x = (test_x - train_x.min(axis=0)) / (train_x.max(axis=0) - train_x.min(axis=0))
+    # test_x = (test_x - train_x.min(axis=0)) / (train_x.max(axis=0) - train_x.min(axis=0))
     print('train_x.shape', train_x.shape)
     print('train_y.shape', train_y.shape)
     print('val_x.shape', val_x.shape)
     print('val_y.shape', val_y.shape)
-    print('test_x.shape', test_x.shape)
+    # print('test_x.shape', test_x.shape)
 
     K.clear_session()
     input_tensor = Input(shape=(train_x.shape[1], ), name='input')
-    x = Dense(128, name='fc1')(input_tensor)
+    x = Dense(1024, name='fc1')(input_tensor)
     x = BatchNormalization(name='bn1')(x)
     x = ReLU(name='relu1')(x)
-    x = Dense(128, name='fc2')(x)
+
+    x = Dense(1024, name='fc2')(x)
     x = BatchNormalization(name='bn2')(x)
     x = ReLU(name='relu2')(x)
+
+    x = Dense(256, name='fc3')(x)
+    x = BatchNormalization(name='bn3')(x)
+    x = ReLU(name='relu3')(x)
+
+    x = Dense(256, name='fc4')(x)
+    x = BatchNormalization(name='bn4')(x)
+    x = ReLU(name='relu4')(x)
+
+    x = Dense(128, name='fc5')(x)
+    x = BatchNormalization(name='bn5')(x)
+    x = ReLU(name='relu5')(x)
+
+    x = Dense(128, name='fc6')(x)
+    x = BatchNormalization(name='bn6')(x)
+    x = ReLU(name='relu6')(x)
+
+    x = Dense(32, name='fc7')(x)
+    x = BatchNormalization(name='bn7')(x)
+    x = ReLU(name='relu7')(x)
+
+    x = Dense(32, name='fc8')(x)
+    x = BatchNormalization(name='bn8')(x)
+    x = ReLU(name='relu8')(x)
+
     x = Dense(1, name='output')(x)
 
     model = Model(inputs=input_tensor, outputs=x)
+    model.regularizers = [regularizers.l2(0.0005)]
+
     optimizer = SGD(lr=1e-3, momentum=0.9)
     model.compile(loss=wmse, optimizer=optimizer, metrics=[rmse])
 
