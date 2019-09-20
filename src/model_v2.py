@@ -68,7 +68,7 @@ for train_idx, val_idx in gkf.split(df, df['RSRP_Poor'], df['Cell Index']):
 
     model.fit(x=train_x, y=train_y, 
               batch_size=1024, 
-              epochs=50,
+              epochs=10,
               validation_data=(val_x, val_y),
               callbacks=callbacks)
 
