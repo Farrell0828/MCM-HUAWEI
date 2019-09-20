@@ -43,7 +43,7 @@ print(loss)
 print("------importance--------")
 print(model.feature_importances_) 
 
-from sklear import XGBRegressor
+from xgboost import XGBRegressor
 
 reg = XGBRegressor()
 model=reg.fit(X_train, y_train)
