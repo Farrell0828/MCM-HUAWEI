@@ -25,9 +25,17 @@ reg = LGBMRegressor()
 reg.fit(X_train, y_train)
 y_pred = reg.predict(X_test)
 loss = mean_squared_error(y_test, y_pred)
+print("----------loss_lgbm-------")
 print(loss)
 
 
 
 
 #%%
+from sklearn.svm import SVR
+reg = SVR()
+reg.fit(X_train, y_train)
+y_pred = reg.predict(X_test)
+loss = mean_squared_error(y_test, y_pred)
+print("----------loss_SVM-------")
+print(loss)
