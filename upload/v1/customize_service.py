@@ -34,5 +34,4 @@ class mnist_service(TfServingBaseService):
         infer_output = {"RSRP": []}
         for output_name, results in data.items():
             infer_output["RSRP"] = results
-            print(results.shape)
         return infer_output
