@@ -11,50 +11,61 @@ train_dfs = [pd.read_csv(train_csv) for train_csv in train_csvs]
 train_df = pd.concat(train_dfs)
 train_df = train_df.reset_index(drop=True)
 
-test_csvs = glob('./data/test_set/*')
-test_dfs = [pd.read_csv(test_csv) for test_csv in test_csvs]
-test_df = pd.concat(test_dfs)
-test_df = test_df.reset_index(drop=True)
+#%%
+df = train_dfs[0]
+df
 
 #%%
-user_map_cols = ['X', 'Y', 'Altitude', 'Building Height', 'Clutter Index']
-cell_map_cols = ['Cell X', 'Cell Y', 'Cell Altitude', 'Cell Building Height', 'Cell Clutter Index']
-#%%
-user_map_info = pd.concat([train_df[user_map_cols], test_df[user_map_cols]]).drop_duplicates()
-cell_map_info = pd.concat([train_df[cell_map_cols], test_df[cell_map_cols]]).drop_duplicates()
-cell_map_info.columns = user_map_info.columns
-global_map_info = pd.concat([user_map_info, cell_map_info]).drop_duplicates()
-global_map_info
+user_cols = ['X', 'Y', 'Altitude', 'Building Height', 'Clutter Index']
 
+df['X'].value_counts()
 
 #%%
-global_map_info.to_csv('./data/global_map_info.csv', index=False)
+df['X'].map(df['X'].value_counts())
 
 #%%
-train_df[['X', 'Y']].max() - train_df[['X', 'Y']].min()
+for col in user_cols:
+    df[col + '_count'] = df[col].map(df[col].value_counts())
 
 #%%
-(train_df[['X', 'Y']].max() - train_df[['X', 'Y']].min()) * 5 / 1000
+len(df)
 
 #%%
-train_df['hb'] = train_df['Height'] + train_df['Cell Altitude'] - train_df['Altitude']
+len(df.drop_duplicates(['X', 'Y']))
 
 #%%
-(train_df['hb'] <= 0).sum()
+df['mean_X'] = df['X'].mean()
+df
 
 #%%
-test_df['hb'] = test_df['Height'] + test_df['Cell Altitude'] - test_df['Altitude']
-(test_df['hb'] <= 0).sum()
+a = 1, b = 2, c = 3
 
 #%%
-train_df[['Cell X', 'X']].values.min(axis=1)
+a = 1
 
 #%%
-train_df['left_dege'] = train_df[['Cell X', 'X']].values.min(axis=1)
-train_df['right_edge'] = train_df[['Cell X', 'X']].values.max(axis=1)
-train_df
+b = 2
 
 #%%
-train_df[['Cell X', 'X', 'left_dege', 'right_edge']]
+c = 3
+
+#%%
+d = [a, b, c]
+
+#%%
+for e in d:
+    e += 4
+
+#%%
+d
+
+#%%
+sub_df = pd.read_csv('./data/train_v2_sub.csv')
+
+#%%
+sub_df
+
+#%%
+sub_df.columns
 
 #%%

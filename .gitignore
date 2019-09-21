@@ -4,3 +4,4 @@ logs/
 k-fold/
 __pycache__/
 playground.py
+tf_model/
