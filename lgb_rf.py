@@ -34,10 +34,10 @@ X=train_df.drop('RSRP',axis=1)
 y=train_df['RSRP']
 
 #%%
-X_train = X[train_idx]
-X_test = X[test_idx]
-y_train = y[train_idx]
-y_test = y[test_idx]
+X_train = X[list(train_idx)]
+X_test = X[list(test_idx)]
+y_train = y[list(train_idx)]
+y_test = y[list(test_idx)]
 
 #%%
 # lightGBM
