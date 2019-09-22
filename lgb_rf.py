@@ -81,7 +81,9 @@ df2['importance']=list(reg.feature_importances_)
 df2 = df2.sort_values(by='importance',ascending=False)
 print(df2)
 
-df3 = pd.DataFrame(data=[[y_pred],[y_test]], columns=['pred', 'test'])
+df3 = pd.DataFrame(data=None, columns=['pred', 'test'])
+data['pred']=y_pred
+data['test']=y_test
 df3.to_csv('pred_RF_results2.csv')
 print(df3)
 
