@@ -7,7 +7,7 @@ import pandas as pd
 import lightgbm as lgb
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import roc_auc_score, roc_curve
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, GroupKFold 
 from sklearn.model_selection import train_test_split
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -27,11 +27,17 @@ train_df = pd.read_csv("./src/data/train_v2.csv")
 # train_df['lgd']=np.log10(train_df['d'])
 # train_df['len2']=((train_df['d']**2+(train_df['hb'])**2)**(1/2))
 
+gkf = GroupKFold(n_splits=5)
+train_idx, test_idx = list(gkf.split(train_df, train_df['RSRP'], train_df['Cell Index']))[0]
+
 X=train_df.drop('RSRP',axis=1)
 y=train_df['RSRP']
 
 #%%
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+X_train = X[train_idx]
+X_test = X[test_idx]
+y_train = y[train_idx]
+y_test = y[test_idx]
 
 #%%
 # lightGBM
