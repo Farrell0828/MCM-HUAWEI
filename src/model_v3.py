@@ -10,7 +10,7 @@ from keras.optimizers import Adam, SGD
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TensorBoard, LearningRateScheduler  
 from sklearn.model_selection import GroupKFold, train_test_split 
 from glob import glob 
-from callbacks import PCRR, BatchLearningRateScheduler 
+from callbacks import PCRR, RMSE 
 from losses import wmse
 from utils import rmse, rmse_np, pcrr4reg 
 import matplotlib.pyplot as plt 
@@ -77,13 +77,15 @@ for train_idx, val_idx in gkf.split(X=df, y=df['RSRP'], groups=df['Cell Index'])
             return lr
 
     lr_scheduler = LearningRateScheduler(scheduler, verbose=1)
-    # callbacks = [checkpoint, lr_scheduler]
+    rmse_callback = RMSE(val_x, val_y)
+    pcrr_callback = PCRR(-103, val_x, val_y)
+    callbacks = [lr_scheduler, rmse_callback, pcrr_callback]
 
     model.fit(x=train_x, y=train_y, 
               batch_size=2048, 
               epochs=3,
               validation_data=(val_x, val_y), 
-              callbacks=[lr_scheduler]
+              callbacks=callbacks
               )
 
     val_y_pred = model.predict(val_x, batch_size=10240)
@@ -91,7 +93,7 @@ for train_idx, val_idx in gkf.split(X=df, y=df['RSRP'], groups=df['Cell Index'])
     sns.distplot(val_y_pred)
     plt.savefig('fold_{}_val_pred_dist.png'.format(fold))
     
-    print('Calculate final val RMSE and PCRR score...')
+    print('Calculate final val RMSE...')
     rmse_score = rmse_np(val_y, val_y_pred)
     rmse_scores.append(rmse_score)
     print('Fold {} Val RMSE Score: {}'.format(fold, rmse_score))

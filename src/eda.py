@@ -129,7 +129,7 @@ calc_theta(145, 55, 55, 33, 33) / np.pi * 180
 train_df['theta'].max()
 
 #%%
-train_df = pd.read_csv(train_csvs[961])
+train_df = pd.read_csv(train_csvs[971])
 plt.figure(figsize=(12, 9))
 plt.scatter(train_df['X'], train_df['Y'], c='g', s=1)
 plt.scatter(train_df['Cell X'], train_df['Cell Y'], c='r', s=50)

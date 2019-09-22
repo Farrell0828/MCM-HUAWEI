@@ -1,0 +1,31 @@
+class PCRR(keras.callbacks.Callback):
+    def __init__(self, threshold, val_x, val_y):
+        super(PCRR, self).__init__()
+        self.threshold = threshold
+        self.val_x = val_x
+        self.val_y_true = val_y
+
+    def on_epoch_end(self, epochs, logs={}):
+        val_y_pred = self.model.predict(self.val_x, batch_size=4096)
+        val_pcrr = self.pcrr(self.val_y_true, val_y_pred)
+        logs.update({'val_pcrr': val_pcrr})
+        print('Val PCRR: {}'.format(val_pcrr))
+
+    def pcrr(self, y_true, y_pred):
+        t = self.threshold
+        tp, fp, fn = 0, 0, 0
+        sub_len = 1000
+        steps = np.ceil(len(y_true) / sub_len)
+        for i in range(int(steps)):
+            y_true_sub = y_true[i*sub_len:(i+1)*sub_len]
+            y_pred_sub = y_pred[i*sub_len:(i+1)*sub_len]
+            tp += ((y_true_sub < t) & (y_pred_sub < t)).sum()
+            fp += ((y_true_sub >= t) & (y_pred_sub < t)).sum()
+            fn += ((y_true_sub < t) & (y_pred_sub >= t)).sum()
+        
+        precision = tp / (tp + fp + 1e-7)
+        recall = tp / (tp + fn + 1e-7)
+        print('precision: ', precision)
+        print('recall: ', recall)
+        pcrr = 2 * (precision * recall) / (precision + recall)
+        return pcrr
