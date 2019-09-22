@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 # 读数据，并进行处理
-train_df = pd.read_csv("./src/data/train_v2.csv")
+df = pd.read_csv("./src/data/train_v2.csv")
 # train_df['d'] = ((train_df['Cell X'] - train_df['X'])**2 + (train_df['Cell Y'] - train_df['Y'])**2)**(1/2) * 0.001
 # train_df = train_df[train_df['d'] >0]
 # train_df = train_df[train_df['Height'] >0]
@@ -28,16 +28,17 @@ train_df = pd.read_csv("./src/data/train_v2.csv")
 # train_df['len2']=((train_df['d']**2+(train_df['hb'])**2)**(1/2))
 
 gkf = GroupKFold(n_splits=5)
-train_idx, test_idx = list(gkf.split(train_df, train_df['RSRP'], train_df['Cell Index']))[0]
+train_idx, test_idx = list(gkf.split(df, df['RSRP'], df['Cell Index']))[0]
+train_df = df.iloc[train_idx]
+val_df = df.iloc[test_idx]
 
-X=train_df.drop('RSRP',axis=1)
-y=train_df['RSRP']
+x_cols = [col for col in df.columns if col not in ['Cell Index', 'RSRP']]
 
-#%%
-X_train = X[list(train_idx)]
-X_test = X[list(test_idx)]
-y_train = y[list(train_idx)]
-y_test = y[list(test_idx)]
+X_train = train_df[x_cols].values
+y_train = train_df['RSRP'].values
+
+X_test = val_df[x_cols].values
+y_test = val_df['RSRP'].values
 
 #%%
 # lightGBM
