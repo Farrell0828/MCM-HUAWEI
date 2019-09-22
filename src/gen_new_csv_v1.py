@@ -85,20 +85,6 @@ if __name__ == '__main__':
     test_df = add_index_fn(test_df, unique_clutter_index)
     print('Test add index feature done.')
 
-    '''
-    map_df = pd.read_csv('./data/global_map_info.csv')
-    print('Read map info done.')
-    clutter_dummy = pd.get_dummies(pd.Categorical(map_df['Clutter Index'], categories=unique_clutter_index), prefix='ClutterIndex')
-    map_df = map_df.merge(clutter_dummy, left_index=True, right_index=True)
-    print('Map add index feature done.')
-
-    need_cols = [col for col in map_df.columns if col not in ['X', 'Y', 'Clutter Index']]
-    env_cols = ['env_' + col for col in need_cols]
-
-    train_df[env_cols] = parallelize_on_rows(train_df, add_env_fn, 20)
-    test_df[env_cols] = parallelize_on_rows(test_df, add_env_fn, 20)
-    '''
-
     train_df.to_csv('./data/train_v1.csv', index=False)
     train_df.sample(n=1000).to_csv('./data/train_v1_sub.csv', index=False)
     test_df.to_csv('./data/test_v1.csv', index=False)

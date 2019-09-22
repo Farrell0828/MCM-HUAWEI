@@ -4,35 +4,35 @@ import numpy as np
 import tensorflow as tf 
 from keras import backend as K 
 from keras import regularizers 
-from keras.layers import Input, Dense, BatchNormalization, ReLU 
+from keras.layers import Input, Dense, BatchNormalization, ReLU, Activation, Lambda 
 from keras.models import Model 
 from keras.optimizers import Adam, SGD 
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TensorBoard 
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TensorBoard, LearningRateScheduler  
 from sklearn.model_selection import GroupKFold, train_test_split 
 from glob import glob 
 from callbacks import PCRR, BatchLearningRateScheduler 
 from losses import wmse
-from utils import rmse, rmse_np, pcrr 
+from utils import rmse, rmse_np, pcrr4reg 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 df = pd.read_csv('./data/train_v3.csv')
-df['RSRP_Poor'] = df['RSRP_Poor'].astype(int)
-# test_df = pd.read_csv('./data/test_v3.csv')
-ignore_cols = ['Cell Index', 'Cell Clutter Index', 'Clutter Index', 'RSRP', 'RSRP_Poor']
-x_cols = [col for col in df.columns if col not in ignore_cols]
-# test_x = test_df[x_cols].values
+test_df = pd.read_csv('./data/test_v3.csv')
+x_cols = [col for col in df.columns if col not in ['Cell Index', 'Cell Clutter Index', 'Clutter Index', 'RSRP']]
+test_x = test_df[x_cols].values
 
 n_folds = 5
 gkf = GroupKFold(n_splits=n_folds)
 fold = 0
-test_y_pred = 0
 rmse_scores = []
 pcrr_scores = []
+final_pred = []
 
 if not os.path.exists('./k-fold/'): os.mkdir('./k-fold')
 
-for train_idx, val_idx in gkf.split(df, df['RSRP_Poor'], df['Cell Index']):
+for train_idx, val_idx in gkf.split(X=df, y=df['RSRP'], groups=df['Cell Index']):
     fold += 1
     train_df = df.iloc[train_idx]
     val_df = df.iloc[val_idx]
@@ -40,89 +40,78 @@ for train_idx, val_idx in gkf.split(df, df['RSRP_Poor'], df['Cell Index']):
     train_y = train_df['RSRP'].values
     val_x = val_df[x_cols].values
     val_y = val_df['RSRP'].values
-    train_x = (train_x - train_x.min(axis=0)) / (train_x.max(axis=0) - train_x.min(axis=0))
-    val_x = (val_x - train_x.min(axis=0)) / (train_x.max(axis=0) - train_x.min(axis=0))
-    # test_x = (test_x - train_x.min(axis=0)) / (train_x.max(axis=0) - train_x.min(axis=0))
+
     print('train_x.shape', train_x.shape)
     print('train_y.shape', train_y.shape)
     print('val_x.shape', val_x.shape)
     print('val_y.shape', val_y.shape)
-    # print('test_x.shape', test_x.shape)
+    print('test_x.shape', test_x.shape)
+
+    def lim2range(x, target_min=-130, target_max=-50) :
+        x02 = K.tanh(x) + 1
+        scale = ( target_max-target_min )/2.
+        return  x02 * scale + target_min
 
     K.clear_session()
-    input_tensor = Input(shape=(train_x.shape[1], ), name='input')
-    x = Dense(1024, name='fc1')(input_tensor)
+    myInput = Input(shape=(train_x.shape[1], ), name='myInput')
+    x = BatchNormalization(name='bn0')(myInput)
+    x = Dense(128, name='fc1')(x)
     x = BatchNormalization(name='bn1')(x)
-    x = ReLU(name='relu1')(x)
-
-    x = Dense(1024, name='fc2')(x)
+    x = Activation('tanh', name='tanh1')(x)
+    x = Dense(128, name='fc2')(x)
     x = BatchNormalization(name='bn2')(x)
-    x = ReLU(name='relu2')(x)
+    x = Activation('tanh', name='tanh2')(x)
+    # myOutput = Dense(1, activation=lim2range, name='myOutput')(x)
+    myOutput = Dense(1, name='myOutput')(x)
 
-    x = Dense(256, name='fc3')(x)
-    x = BatchNormalization(name='bn3')(x)
-    x = ReLU(name='relu3')(x)
-
-    x = Dense(256, name='fc4')(x)
-    x = BatchNormalization(name='bn4')(x)
-    x = ReLU(name='relu4')(x)
-
-    x = Dense(128, name='fc5')(x)
-    x = BatchNormalization(name='bn5')(x)
-    x = ReLU(name='relu5')(x)
-
-    x = Dense(128, name='fc6')(x)
-    x = BatchNormalization(name='bn6')(x)
-    x = ReLU(name='relu6')(x)
-
-    x = Dense(32, name='fc7')(x)
-    x = BatchNormalization(name='bn7')(x)
-    x = ReLU(name='relu7')(x)
-
-    x = Dense(32, name='fc8')(x)
-    x = BatchNormalization(name='bn8')(x)
-    x = ReLU(name='relu8')(x)
-
-    x = Dense(1, name='output')(x)
-
-    model = Model(inputs=input_tensor, outputs=x)
+    model = Model(inputs=myInput, outputs=myOutput)
     model.regularizers = [regularizers.l2(0.0005)]
+    optimizer = Adam(lr=1e-3)
+    model.compile(loss='mse', optimizer=optimizer, metrics=[rmse])
 
-    optimizer = SGD(lr=1e-3, momentum=0.9)
-    model.compile(loss=wmse, optimizer=optimizer, metrics=[rmse])
+    def scheduler(epoch, lr):
+        reduce_epoches = [1, 2]
+        if epoch in reduce_epoches:
+            return 0.1*lr
+        else:
+            return lr
 
-    checkpoint = ModelCheckpoint('./k-fold/val_loss_best_fold_{}.h5'.format(fold), 
-                                 save_weights_only=True, verbose=1)
-    reduce_lr = ReduceLROnPlateau(patience=5, min_delta=1e-4, verbose=1)
-    early_stop = EarlyStopping(patience=8, min_delta=1e-4, verbose=1)
-    tensorboard = TensorBoard('./logs/fold_{}'.format(fold))
-
-    callbacks = [checkpoint, reduce_lr, early_stop, tensorboard]
+    lr_scheduler = LearningRateScheduler(scheduler, verbose=1)
+    # callbacks = [checkpoint, lr_scheduler]
 
     model.fit(x=train_x, y=train_y, 
-              batch_size=1024, 
-              epochs=5,
-              validation_data=(val_x, val_y),
-              callbacks=callbacks)
+              batch_size=2048, 
+              epochs=3,
+              validation_data=(val_x, val_y), 
+              callbacks=[lr_scheduler]
+              )
 
-    model.load_weights('./k-fold/val_loss_best_fold_{}.h5'.format(fold))
-    val_y_pred = model.predict(val_x, batch_size=4096)
+    val_y_pred = model.predict(val_x, batch_size=10240)
+    plt.figure()
+    sns.distplot(val_y_pred)
+    plt.savefig('fold_{}_val_pred_dist.png'.format(fold))
+    
     print('Calculate final val RMSE and PCRR score...')
-    # rmse_score = rmse_np(val_y, val_y_pred)
-    # rmse_scores.append(rmse_score)
-    # print('Fold {} Val RMSE Score: {}'.format(fold, rmse_score))
-    pcrr_score = pcrr(-103, val_y, val_y_pred)
-    pcrr_scores.append(pcrr_score)
-    print('Fold {} Val PCRR Score: {}'.format(fold, pcrr_score))
+    rmse_score = rmse_np(val_y, val_y_pred)
+    rmse_scores.append(rmse_score)
+    print('Fold {} Val RMSE Score: {}'.format(fold, rmse_score))
+    
+    test_y_pred = model.predict(test_x, batch_size=10240, verbose=1)
+    final_pred.append(test_y_pred)
+    plt.figure()
+    sns.distplot(test_y_pred)
+    plt.savefig('fold_{}_test_pred_dist.png'.format(fold))
 
-    test_y_pred += model.predict(test_x, batch_size=1024, verbose=1)
-
-# print('CV RMSE Score: ', np.array(rmse_scores).mean())
-print('CV PCRR Score: ', np.array(pcrr_scores).mean())
+print('RMSE Scores: ', rmse_scores)
+print('CV RMSE Score: ', np.array(rmse_scores).mean())
 
 if not os.path.exists('./results/'): os.mkdir('./results')
-test_y_pred /= n_folds
-test_df['RSRP'] = test_y_pred
+final_pred = np.array(final_pred).mean(axis=0)
+plt.figure()
+sns.distplot(final_pred)
+plt.savefig('final_test_pred_dist.png')
+
+test_df['RSRP'] = final_pred
 for cell_index in test_df['Cell Index'].unique():
     sub_df = test_df[test_df['Cell Index'] == cell_index]
     rsrp = sub_df[['RSRP']].values.tolist()

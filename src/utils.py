@@ -1,10 +1,12 @@
 import numpy as np 
 from tqdm import tqdm 
 from keras import backend as K 
+from sklearn.metrics import mean_squared_error
+from math import sqrt
 
 def rmse(y_true, y_pred):
     return K.sqrt(K.mean(K.pow(y_true - y_pred, 2)))
-
+'''
 def rmse_np(y_true, y_pred):
     sum_se = 0
     sub_len = 10000
@@ -12,8 +14,11 @@ def rmse_np(y_true, y_pred):
     for i in tqdm(range(int(steps))):
         y_true_sub = y_true[i*sub_len:(i+1)*sub_len]
         y_pred_sub = y_pred[i*sub_len:(i+1)*sub_len]
-        sum_se += np.power(y_true_sub - y_pred_sub, 2).sum()
+        sum_se += ((y_true_sub - y_pred_sub)**2).sum()
     return np.sqrt(sum_se / len(y_true))
+'''
+def rmse_np(y_true, y_pred):
+    return sqrt(mean_squared_error(y_true, y_pred))
 
 def pcrr4reg(threshold, y_true, y_pred):
     t = threshold

@@ -40,12 +40,13 @@ class mnist_service(TfServingBaseService):
                         .merge(clutter_dummy, left_index=True, right_index=True))
 
                 x_cols = [col for col in df.columns if col not in ['Cell Index', 'Cell Clutter Index', 'Clutter Index', 'RSRP']]
+                df = df.fillna(df.mean())
                 input_data = df[x_cols].values
                 filesDatas.append(input_data)
         filesDatas = np.concatenate(filesDatas, axis=0)
         
-        preprocessed_data['input_tensor'] = filesDatas.astype(np.float32) 
-        print('input_rensor.shape', filesDatas.shape)
+        preprocessed_data['myInput'] = filesDatas.astype(np.float32) 
+        print('myInput.shape', filesDatas.shape)
         return preprocessed_data
 
 
@@ -53,5 +54,8 @@ class mnist_service(TfServingBaseService):
         infer_output = {"RSRP": []}
         for output_name, results in data.items():
             print(output_name, np.array(results).shape)
+            results_np = np.array(results)
+            results_np[np.isnan(results_np)] = -91.78557
+            results = results_np.tolist()
             infer_output["RSRP"] = results
         return infer_output
