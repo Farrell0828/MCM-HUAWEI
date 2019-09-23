@@ -34,11 +34,9 @@ def user_dist(train_df, title):
     plt.savefig(title+'.png', dpi=300)
 
 
-train_csvs = glob('./data/train_set/*')
+df = pd.read_csv('ligthgbm.csv', index_col=0)
 
-train_df = pd.read_csv(train_csvs[960])
-user_dist(train_df, 'user_dist_1')
-
-train_df = pd.read_csv(train_csvs[971])
-user_dist(train_df, 'user_dist_3')
-rsrp_dist(train_df, 'rsrp_dist_4')
+plt.figure(figsize=(8,12))
+sns.barplot(x="importance",y="feature",data=df)
+plt.tight_layout()
+plt.savefig('lgbm_importances.png')

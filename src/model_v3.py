@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf 
 from keras import backend as K 
 from keras import regularizers 
-from keras.layers import Input, Dense, BatchNormalization, ReLU, Activation, Lambda 
+from keras.layers import Input, Dense, BatchNormalization, ReLU, LeakyReLU, Activation, Lambda 
 from keras.models import Model 
 from keras.optimizers import Adam, SGD 
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TensorBoard, LearningRateScheduler  
@@ -12,7 +12,7 @@ from sklearn.model_selection import GroupKFold, train_test_split
 from glob import glob 
 from callbacks import PCRR, RMSE 
 from losses import wmse
-from utils import rmse, rmse_np, pcrr4reg 
+from utils import rmse, rmse_np, pcrr4reg, pcrr4cls 
 import matplotlib.pyplot as plt 
 import seaborn as sns 
 
@@ -57,15 +57,15 @@ for train_idx, val_idx in gkf.split(X=df, y=df['RSRP'], groups=df['Cell Index'])
     x = BatchNormalization(name='bn0')(myInput)
     x = Dense(128, name='fc1')(x)
     x = BatchNormalization(name='bn1')(x)
-    x = Activation('relu', name='relu1')(x)
+    x = ReLU(name='relu1')(x)
     x = Dense(128, name='fc2')(x)
     x = BatchNormalization(name='bn2')(x)
-    x = Activation('relu', name='relu2')(x)
+    x = ReLU(name='relu2')(x)
     # myOutput = Dense(1, activation=lim2range, name='myOutput')(x)
     myOutput = Dense(1, name='myOutput')(x)
 
     model = Model(inputs=myInput, outputs=myOutput)
-    model.regularizers = [regularizers.l2(0.0005)]
+    model.regularizers = [regularizers.l2(0.001)]
     optimizer = Adam(lr=1e-3)
     model.compile(loss='mse', optimizer=optimizer, metrics=[rmse])
 
@@ -93,10 +93,14 @@ for train_idx, val_idx in gkf.split(X=df, y=df['RSRP'], groups=df['Cell Index'])
     sns.distplot(val_y_pred)
     plt.savefig('fold_{}_val_pred_dist.png'.format(fold))
     
-    print('Calculate final val RMSE...')
+    print('Calculate final val RMSE and PCRR...')
     rmse_score = rmse_np(val_y, val_y_pred)
     rmse_scores.append(rmse_score)
     print('Fold {} Val RMSE Score: {}'.format(fold, rmse_score))
+
+    pcrr_score = pcrr4reg(val_y, val_y_pred)
+    pcrr_scores.append(pcrr_score)
+    print('Fold {} Val PCRR Score: {}'.format(fold, pcrr_score))
     
     test_y_pred = model.predict(test_x, batch_size=10240, verbose=1)
     final_pred.append(test_y_pred)
@@ -106,6 +110,9 @@ for train_idx, val_idx in gkf.split(X=df, y=df['RSRP'], groups=df['Cell Index'])
 
 print('RMSE Scores: ', rmse_scores)
 print('CV RMSE Score: ', np.array(rmse_scores).mean())
+
+print('PCRR Scores: ', pcrr_scores)
+print('CV PCRR Score: ', np.array(pcrr_scores).mean())
 
 if not os.path.exists('./results/'): os.mkdir('./results')
 final_pred = np.array(final_pred).mean(axis=0)
